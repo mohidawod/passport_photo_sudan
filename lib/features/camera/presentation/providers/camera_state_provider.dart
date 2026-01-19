@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sudan_passport_photo/core/constants/photo_constants.dart';
 import 'package:sudan_passport_photo/features/camera/data/services/camera_service.dart';
 import 'package:sudan_passport_photo/features/camera/domain/models/camera_state.dart';
@@ -23,6 +24,16 @@ class CameraStateNotifier extends StateNotifier<CameraState> {
     state = state.copyWith(status: CameraStatus.initializing);
     
     try {
+      // Request camera permission
+      final status = await Permission.camera.request();
+      if (!status.isGranted) {
+        state = state.copyWith(
+          status: CameraStatus.error,
+          errorMessage: 'يجب منح إذن الكاميرا لاستخدام التطبيق',
+        );
+        return;
+      }
+
       final controller = await _cameraService.initializeCamera();
       state = state.copyWith(
         status: CameraStatus.ready,

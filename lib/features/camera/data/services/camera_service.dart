@@ -23,6 +23,9 @@ class CameraService {
   
   Future<CameraController> initializeCamera() async {
     final cameras = await availableCameras();
+    if (cameras.isEmpty) {
+      throw Exception('لا توجد كاميرات متوفرة في هذا الجهاز');
+    }
     
     // Prefer front camera for passport photos
     final camera = cameras.firstWhere(
@@ -50,7 +53,7 @@ class CameraService {
   void _scheduleNextDetection(Function(FaceReadiness, Face?) onFaceDetected) {
     if (_controller == null) return;
     
-    _detectionTimer = Timer(const Duration(milliseconds: 200), () async {
+    _detectionTimer = Timer(const Duration(milliseconds: 500), () async {
       if (_isDetecting || _controller == null || !_controller!.value.isInitialized) {
         _scheduleNextDetection(onFaceDetected);
         return;
