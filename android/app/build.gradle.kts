@@ -16,7 +16,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -29,16 +29,16 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH") ?: project.findProperty("KEYSTORE_PATH")?.toString()
-            val keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")?.toString()
-            val keyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
-            val keyPassword = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
+            val envKeyPath = System.getenv("KEYSTORE_PATH") ?: project.findProperty("KEYSTORE_PATH")?.toString()
+            val envKeyPassword = System.getenv("KEYSTORE_PASSWORD") ?: project.findProperty("KEYSTORE_PASSWORD")?.toString()
+            val envKeyAlias = System.getenv("KEY_ALIAS") ?: project.findProperty("KEY_ALIAS")?.toString()
+            val envKeyPasswordAlias = System.getenv("KEY_PASSWORD") ?: project.findProperty("KEY_PASSWORD")?.toString()
 
-            if (keystorePath != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
-                storeFile = file(keystorePath)
-                storePassword = keystorePassword
-                keyAlias = keyAlias
-                keyPassword = keyPassword
+            if (envKeyPath != null && envKeyPassword != null && envKeyAlias != null && envKeyPasswordAlias != null) {
+                storeFile = file(envKeyPath)
+                storePassword = envKeyPassword
+                keyAlias = envKeyAlias
+                keyPassword = envKeyPasswordAlias
             }
         }
     }
