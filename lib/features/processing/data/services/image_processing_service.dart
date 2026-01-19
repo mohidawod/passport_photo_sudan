@@ -114,9 +114,9 @@ class ImageProcessingService {
     );
 
     // Prepare background color
-    final bgColorR = (backgroundColor.r * 255.0).round().clamp(0, 255);
-    final bgColorG = (backgroundColor.g * 255.0).round().clamp(0, 255);
-    final bgColorB = (backgroundColor.b * 255.0).round().clamp(0, 255);
+    final bgColorR = backgroundColor.red;
+    final bgColorG = backgroundColor.green;
+    final bgColorB = backgroundColor.blue;
 
     // Loop through pixels
     for (int y = 0; y < image.height; y++) {

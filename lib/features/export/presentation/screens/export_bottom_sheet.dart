@@ -32,7 +32,7 @@ class ExportBottomSheet extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.textLight.withValues(alpha: 0.3),
+                color: AppColors.textLight.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -108,7 +108,7 @@ class _ExportOptionButton extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           border: Border.all(
-            color: AppColors.secondary.withValues(alpha: 0.3),
+            color: AppColors.secondary.withOpacity(0.3),
           ),
           borderRadius: BorderRadius.circular(12),
         ),
@@ -117,7 +117,7 @@ class _ExportOptionButton extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.2),
+                color: AppColors.secondary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -143,7 +143,7 @@ class _ExportOptionButton extends StatelessWidget {
                   Text(
                     description,
                     style: TextStyle(
-                      color: AppColors.textLight.withValues(alpha: 0.7),
+                      color: AppColors.textLight.withOpacity(0.7),
                       fontSize: 14,
                     ),
                   ),

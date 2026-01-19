@@ -42,13 +42,13 @@ class BackgroundSelector extends StatelessWidget {
               color: backgroundColor.color,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected ? AppColors.secondary : AppColors.textLight.withValues(alpha: 0.3),
+                color: isSelected ? AppColors.secondary : AppColors.textLight.withOpacity(0.3),
                 width: isSelected ? 4 : 2,
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppColors.secondary.withValues(alpha: 0.5),
+                        color: AppColors.secondary.withOpacity(0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
