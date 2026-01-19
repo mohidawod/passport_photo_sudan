@@ -18,3 +18,6 @@
 
 # Image processing
 -keep class com.dexteriv.flutter_image_compress.** { *; }
+
+# Suppress warnings from Flutter Play Store Split Application
+-dontwarn com.google.android.play.core.**
