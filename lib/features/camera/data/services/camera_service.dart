@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:sudan_passport_photo/core/constants/photo_constants.dart';
@@ -8,7 +8,7 @@ import 'package:sudan_passport_photo/features/camera/domain/models/camera_state.
 
 class CameraService {
   CameraController? _controller;
-  final FaceDetector _faceDetector = FaceDetector(
+  final FaceDetector? _faceDetector = kIsWeb ? null : FaceDetector(
     options: FaceDetectorOptions(
       enableLandmarks: false,
       enableClassification: false,
@@ -19,6 +19,7 @@ class CameraService {
   
   bool _isDetecting = false;
   Timer? _detectionTimer;
+
   
   Future<CameraController> initializeCamera() async {
     final cameras = await availableCameras();
@@ -41,6 +42,7 @@ class CameraService {
   }
   
   void startFaceDetection(Function(FaceReadiness, Face?) onFaceDetected) {
+    if (kIsWeb || _faceDetector == null) return;
     _detectionTimer?.cancel();
     _scheduleNextDetection(onFaceDetected);
   }
@@ -64,6 +66,10 @@ class CameraService {
         }
 
         final image = await _controller!.takePicture();
+        if (kIsWeb || _faceDetector == null) {
+           _isDetecting = false;
+           return;
+        }
         final inputImage = InputImage.fromFilePath(image.path);
         final faces = await _faceDetector.processImage(inputImage);
         
@@ -192,7 +198,7 @@ class CameraService {
   
   void dispose() {
     stopFaceDetection();
-    _faceDetector.close();
+    _faceDetector?.close();
     _controller?.dispose();
     _controller = null;
   }

@@ -23,7 +23,6 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.1' # Matching user's SDK version as closely as possible or stable
           channel: 'stable'
           cache: true
 
@@ -33,14 +32,17 @@ jobs:
       - name: Analyze code
         run: flutter analyze
 
+      - name: Run Tests
+        run: flutter test
+
       - name: Build APK (Release)
-        # Note: This builds an unsigned release APK. 
-        # For a signed APK, secrets (keystore) must be configured.
+        # To enable cloud signing, add KEYSTORE_PATH, KEYSTORE_PASSWORD, 
+        # KEY_ALIAS, and KEY_PASSWORD as GitHub secrets and decode the keystore file.
         run: flutter build apk --release --no-shrink
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sudan-passport-photo-apk
+          name: sudan-passport-photo-release
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error

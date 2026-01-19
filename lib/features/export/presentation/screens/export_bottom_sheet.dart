@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sudan_passport_photo/core/theme/app_colors.dart';
-import 'package:sudan_passport_photo/features/export/presentation/providers/export_state_provider.dart';
 
-class ExportBottomSheet extends ConsumerWidget {
-  final VoidCallback onExportPdf;
+class ExportBottomSheet extends StatefulWidget {
+  final Function(String paperSize, bool inkSaving) onExportPdf;
   final VoidCallback onExportJpg;
 
   const ExportBottomSheet({
@@ -14,9 +12,15 @@ class ExportBottomSheet extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final exportState = ref.watch(exportStateProvider);
+  State<ExportBottomSheet> createState() => _ExportBottomSheetState();
+}
 
+class _ExportBottomSheetState extends State<ExportBottomSheet> {
+  String selectedPaperSize = 'A4';
+  bool inkSaving = true;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -26,21 +30,25 @@ class ExportBottomSheet extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textLight.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textLight.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
             const SizedBox(height: 24),
 
             // Title
             const Text(
-              'اختر صيغة التصدير',
+              'تجهيز الصورة للطباعة',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textLight,
                 fontSize: 20,
@@ -49,29 +57,71 @@ class ExportBottomSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // PDF Options section
+            const Text(
+              'إعدادات PDF:',
+              style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            
+            // Paper Size Row
+            Row(
+              children: [
+                const Text('مقاس الورق:', style: TextStyle(color: AppColors.textLight)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: selectedPaperSize,
+                    dropdownColor: AppColors.surfaceDark,
+                    style: const TextStyle(color: AppColors.textLight),
+                    isExpanded: true,
+                    items: ['A4', '4x6', '5x7', '3x4'].map((size) {
+                      return DropdownMenuItem(
+                        value: size,
+                        child: Text(size),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) setState(() => selectedPaperSize = value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            
+            // Ink Saving Toggle
+            SwitchListTile(
+              title: const Text('توفير الحبر (خطوط قص نحيفة)', 
+                style: TextStyle(color: AppColors.textLight, fontSize: 14)),
+              value: inkSaving,
+              activeColor: AppColors.secondary,
+              onChanged: (value) => setState(() => inkSaving = value),
+              contentPadding: EdgeInsets.zero,
+            ),
+            
+            const SizedBox(height: 16),
+
             // PDF Export Button
             _ExportOptionButton(
               icon: Icons.picture_as_pdf,
-              label: 'تصدير PDF',
-              description: 'ملف PDF بحجم 35×45 مم',
-              onTap: exportState.isExporting ? null : onExportPdf,
-              isLoading: exportState.isExporting && exportState.format == ExportFormat.pdf,
+              label: 'تصدير PDF (متعدد الصور)',
+              description: 'جاهز للطباعة فوراً',
+              onTap: () => widget.onExportPdf(selectedPaperSize, inkSaving),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // JPG Export Button
             _ExportOptionButton(
               icon: Icons.image,
-              label: 'تصدير JPG',
-              description: 'صورة بجودة عالية',
-              onTap: exportState.isExporting ? null : onExportJpg,
-              isLoading: exportState.isExporting && exportState.format == ExportFormat.jpg,
+              label: 'تصدير JPG (صورة واحدة)',
+              description: 'صورة منفردة بجودة عالية',
+              onTap: widget.onExportJpg,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Cancel Button
             TextButton(
-              onPressed: exportState.isExporting ? null : () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context),
               child: const Text(
                 'إلغاء',
                 style: TextStyle(color: AppColors.textLight),
@@ -84,19 +134,18 @@ class ExportBottomSheet extends ConsumerWidget {
   }
 }
 
+
 class _ExportOptionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final String description;
   final VoidCallback? onTap;
-  final bool isLoading;
 
   const _ExportOptionButton({
     required this.icon,
     required this.label,
     required this.description,
     this.onTap,
-    this.isLoading = false,
   });
 
   @override
@@ -150,21 +199,12 @@ class _ExportOptionButton extends StatelessWidget {
                 ],
               ),
             ),
-            if (isLoading)
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.secondary,
-                ),
-              )
-            else
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.secondary,
-                size: 20,
-              ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: AppColors.secondary,
+              size: 20,
+            ),
+
           ],
         ),
       ),

@@ -10,6 +10,18 @@ class PhotoConstants {
   static const int widthPx = 413; // (35mm / 25.4) * 300 DPI
   static const int heightPx = 531; // (45mm / 25.4) * 300 DPI
   
+  // Background Colors
+  static const int sudanPassportRed = 0xFFFF0000;
+  static const int standardWhite = 0xFFFFFFFF;
+  
+  // Paper Sizes (in mm)
+  static const Map<String, List<double>> paperSizes = {
+    'A4': [210.0, 297.0],
+    '4x6': [101.6, 152.4],
+    '5x7': [127.0, 177.8],
+    '3x4': [76.2, 101.6],
+  };
+
   // Face detection thresholds
   static const double minFaceSize = 0.3; // 30% of frame
   static const double maxFaceSize = 0.7; // 70% of frame
@@ -22,3 +34,4 @@ class PhotoConstants {
   // Auto-capture delay
   static const int autoCaptureDelayMs = 1000; // 1 second after ready
 }
+

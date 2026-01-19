@@ -161,22 +161,36 @@ class _PreviewScreenState extends ConsumerState<PreviewScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => ExportBottomSheet(
-        onExportPdf: () => _exportImage(ExportFormat.pdf),
+        onExportPdf: (paperSize, inkSaving) => _exportImage(
+          ExportFormat.pdf,
+          paperSize: paperSize,
+          inkSaving: inkSaving,
+        ),
         onExportJpg: () => _exportImage(ExportFormat.jpg),
       ),
     );
   }
   
-  Future<void> _exportImage(ExportFormat format) async {
+  Future<void> _exportImage(
+    ExportFormat format, {
+    String paperSize = 'A4',
+    bool inkSaving = true,
+  }) async {
     if (processedImage == null) return;
     
     if (!mounted) return;
     Navigator.pop(context); // Close bottom sheet
     
     final file = format == ExportFormat.pdf
-        ? await ref.read(exportStateProvider.notifier).exportAsPdf(processedImage!)
+        ? await ref.read(exportStateProvider.notifier).exportAsPdf(
+            processedImage!,
+            paperSize: paperSize,
+            inkSaving: inkSaving,
+          )
         : await ref.read(exportStateProvider.notifier).exportAsJpg(processedImage!);
+
     
     if (!mounted) return;
     

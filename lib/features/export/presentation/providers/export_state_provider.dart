@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' as io;
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sudan_passport_photo/features/export/data/services/export_service.dart';
@@ -19,7 +19,7 @@ enum ExportFormat { pdf, jpg }
 class ExportState {
   final bool isExporting;
   final ExportFormat? format;
-  final File? exportedFile;
+  final io.File? exportedFile;
   final String? errorMessage;
 
   const ExportState({
@@ -32,7 +32,7 @@ class ExportState {
   ExportState copyWith({
     bool? isExporting,
     ExportFormat? format,
-    File? exportedFile,
+    io.File? exportedFile,
     String? errorMessage,
   }) {
     return ExportState(
@@ -49,7 +49,11 @@ class ExportStateNotifier extends StateNotifier<ExportState> {
 
   ExportStateNotifier(this._exportService) : super(const ExportState());
 
-  Future<File?> exportAsPdf(Uint8List imageBytes) async {
+  Future<io.File?> exportAsPdf(
+    Uint8List imageBytes, {
+    String paperSize = 'A4',
+    bool inkSaving = true,
+  }) async {
     state = state.copyWith(isExporting: true, format: ExportFormat.pdf);
 
     try {
@@ -57,7 +61,10 @@ class ExportStateNotifier extends StateNotifier<ExportState> {
       final file = await _exportService.exportToPdf(
         imageBytes: imageBytes,
         filename: filename,
+        paperSize: paperSize,
+        inkSaving: inkSaving,
       );
+
 
       state = state.copyWith(
         isExporting: false,
@@ -74,7 +81,7 @@ class ExportStateNotifier extends StateNotifier<ExportState> {
     }
   }
 
-  Future<File?> exportAsJpg(Uint8List imageBytes) async {
+  Future<io.File?> exportAsJpg(Uint8List imageBytes) async {
     state = state.copyWith(isExporting: true, format: ExportFormat.jpg);
 
     try {
@@ -103,3 +110,4 @@ class ExportStateNotifier extends StateNotifier<ExportState> {
     state = const ExportState();
   }
 }
+

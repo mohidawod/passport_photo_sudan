@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:io' as io;
 import 'package:flutter/foundation.dart'; // For compute
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -8,7 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sudan_passport_photo/core/constants/photo_constants.dart';
 
 class ImageProcessingService {
-  final SubjectSegmenter _segmenter = SubjectSegmenter(
+  final SubjectSegmenter? _segmenter = kIsWeb ? null : SubjectSegmenter(
     options: SubjectSegmenterOptions(
       enableForegroundConfidenceMask: true,
       enableForegroundBitmap: false,
@@ -37,6 +37,8 @@ class ImageProcessingService {
       
       final segmentedImage = await _removeBackground(standardizedImage, targetBackgroundColor);
       
+      // On Web, compute/isolates might have different behavior or limitations
+      // but usually simple compute works if the function is top-level/static.
       return await compute(
         _enhanceAndEncode, 
         _EnhanceData(segmentedImage, PhotoConstants.jpegQuality)
@@ -49,6 +51,7 @@ class ImageProcessingService {
 
   /// Resizes image natively to minimize memory usage before decoding.
   Future<Uint8List> _nativeResize(Uint8List bytes) async {
+    // flutter_image_compress handles web automatically
     return await FlutterImageCompress.compressWithList(
       bytes,
       minHeight: PhotoConstants.heightPx,
@@ -88,78 +91,81 @@ class ImageProcessingService {
     return Uint8List.fromList(img.encodeJpg(enhanced, quality: data.quality));
   }
 
-  /// Remove background using ML Kit Subject Segmentation
+  /// Remove background using ML Kit Subject Segmentation with alpha blending for smoother edges
   Future<img.Image> _removeBackground(img.Image image, Color backgroundColor) async {
-    // 1. Save temp file for ML Kit (it needs a file path or weird buffer formats)
-    final tempDir = await getTemporaryDirectory();
-    final tempFile = File('${tempDir.path}/segment_temp.jpg');
-    await tempFile.writeAsBytes(img.encodeJpg(image));
-
-    // 2. Run Segmentation
-    final inputImage = InputImage.fromFilePath(tempFile.path);
-    final mask = await _segmenter.processImage(inputImage);
-    
-    // Clean up temp file
-    await tempFile.delete();
-
-    if (mask.foregroundConfidenceMask == null) {
-      return image; // Segmentation failed, return original
+    // Fallback for web or unsupported platforms
+    if (kIsWeb || _segmenter == null) {
+      debugPrint('Background removal skip: Not supported on this platform');
+      // For web, we just return the image as is for now
+      // Alternatively, we could fill the background if it's already a certain color, 
+      // but without segmentation, we can't reliably detect the person.
+      return image; 
     }
 
-    // 3. Process pixels
-    final confidences = mask.foregroundConfidenceMask!;
-    final bgImage = img.Image(
-      width: image.width,
-      height: image.height,
-    );
+    try {
+      // 1. Save temp file for ML Kit
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = io.File('${tempDir.path}/segment_temp.jpg');
+      await tempFile.writeAsBytes(img.encodeJpg(image));
 
-    // Prepare background color
-    final bgColorR = backgroundColor.red;
-    final bgColorG = backgroundColor.green;
-    final bgColorB = backgroundColor.blue;
+      // 2. Run Segmentation
+      final inputImage = InputImage.fromFilePath(tempFile.path);
+      final mask = await _segmenter.processImage(inputImage);
+      
+      // Clean up temp file
+      if (await tempFile.exists()) {
+        await tempFile.delete();
+      }
 
-    // Loop through pixels
-    for (int y = 0; y < image.height; y++) {
-      for (int x = 0; x < image.width; x++) {
-        // Get confidence (0.0 to 1.0) for this pixel location
-        // The mask is likely significantly smaller or same size depending on implementation
-        // But usually accessed via flat array. 
-        // Note: ML Kit mask might be lower resolution.
-        // For simplicity and speed in this MVP, we assume 1:1 mapping simplicity or basic access
-        // However, standard access involves mapping coordinates.
-        
-        // Simpler approach: Use the confidence buffer directly if size matches, 
-        // or just apply manual threshold.
-        // Since accessing raw buffer accurately in strict Dart without overhead is complex,
-        // we'll try to map it. 
-        // actually confidences is just a List<double> or Float32List.
-        
-        // IMPORTANT: The mask width/height might differ from image.
-        // We need to scale coordinates.
-        // Let's assume for this specific library version we iterate carefully.
-        
-        // Actually, let's look at a safer, cleaner pixel loop.
-        final int index = y * image.width + x;
-        double confidence = 0.0;
-        
-        if (index < confidences.length) {
-             confidence = confidences[index];
-        }
+      if (mask.foregroundConfidenceMask == null) {
+        return image; // Segmentation failed, return original
+      }
 
-        // Threshold for "Is this a person?"
-        // We can do alpha blending for smoother edges
-        if (confidence > 0.5) {
-          // Keep original pixel (Person)
-          bgImage.setPixel(x, y, image.getPixel(x, y));
-        } else {
-          // Replace with background color
-          bgImage.setPixelRgb(x, y, bgColorR, bgColorG, bgColorB);
+      // 3. Process pixels with alpha blending
+      final confidences = mask.foregroundConfidenceMask!;
+      
+      // Create a copy of the original image to work on
+      final resultImage = img.Image.from(image);
+
+      final bgColorR = backgroundColor.red;
+      final bgColorG = backgroundColor.green;
+      final bgColorB = backgroundColor.blue;
+
+      for (int y = 0; y < image.height; y++) {
+        for (int x = 0; x < image.width; x++) {
+          final int index = y * image.width + x;
+          if (index >= confidences.length) continue;
+
+          double confidence = confidences[index];
+
+          // Alpha blending: 
+          // result = (foreground * confidence) + (background * (1 - confidence))
+          if (confidence < 1.0) {
+            final pixel = image.getPixel(x, y);
+            
+            // Extract components
+            final r = pixel.r;
+            final g = pixel.g;
+            final b = pixel.b;
+
+            // Blend colors
+            final newR = (r * confidence + bgColorR * (1.0 - confidence)).round();
+            final newG = (g * confidence + bgColorG * (1.0 - confidence)).round();
+            final newB = (b * confidence + bgColorB * (1.0 - confidence)).round();
+
+            resultImage.setPixelRgb(x, y, newR, newG, newB);
+          }
         }
       }
-    }
 
-    return bgImage;
+      return resultImage;
+    } catch (e) {
+      debugPrint('Segmentation error: $e');
+      return image;
+    }
   }
+
+
 
   /// Resize image to specific dimensions
   Future<Uint8List> resizeImage({
@@ -198,9 +204,10 @@ class ImageProcessingService {
   }
   
   void dispose() {
-    _segmenter.close();
+    _segmenter?.close();
   }
 }
+
 
 class _EnhanceData {
   final img.Image image;
