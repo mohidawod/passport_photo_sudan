@@ -1,0 +1,46 @@
+name: Build & Release APK
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1' # Matching user's SDK version as closely as possible or stable
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze
+
+      - name: Build APK (Release)
+        # Note: This builds an unsigned release APK. 
+        # For a signed APK, secrets (keystore) must be configured.
+        run: flutter build apk --release --no-shrink
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sudan-passport-photo-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
